@@ -2,9 +2,25 @@ from transformers import AutoModel, AutoTokenizer
 import gradio as gr
 import mdtex2html
 from utils import load_model_on_gpus
+import sys
 
-tokenizer = AutoTokenizer.from_pretrained("THUDM/chatglm2-6b", trust_remote_code=True)
-model = AutoModel.from_pretrained("THUDM/chatglm2-6b", trust_remote_code=True).cuda()
+
+# 量化参数
+quantization = ''
+try:
+    quantization = sys.argv[1]
+except:
+    pass
+tokenizer = AutoTokenizer.from_pretrained("model", trust_remote_code=True)
+if quantization == 'INT4':
+    model = AutoModel.from_pretrained("model", trust_remote_code=True).quantize(4).cuda()
+elif quantization == 'INT8':
+    model = AutoModel.from_pretrained("model", trust_remote_code=True).quantize(8).cuda()
+elif quantization == 'FP16':
+    model = AutoModel.from_pretrained("model", trust_remote_code=True).cuda()
+else:
+    print("请输入正确的量化参数：INT4 / INT8 / FP16")
+    exit(0)
 # 多显卡支持，使用下面两行代替上面一行，将num_gpus改为你实际的显卡数量
 # from utils import load_model_on_gpus
 # model = load_model_on_gpus("THUDM/chatglm2-6b", num_gpus=2)
@@ -79,19 +95,19 @@ def reset_state():
     return [], [], None
 
 
-with gr.Blocks() as demo:
+with gr.Blocks(title="ChatGLM2-6B") as demo:
     gr.HTML("""<h1 align="center">ChatGLM2-6B</h1>""")
 
     chatbot = gr.Chatbot()
     with gr.Row():
         with gr.Column(scale=4):
             with gr.Column(scale=12):
-                user_input = gr.Textbox(show_label=False, placeholder="Input...", lines=10).style(
+                user_input = gr.Textbox(show_label=False, placeholder="请输入...", lines=10).style(
                     container=False)
             with gr.Column(min_width=32, scale=1):
-                submitBtn = gr.Button("Submit", variant="primary")
+                submitBtn = gr.Button("提交", variant="primary")
         with gr.Column(scale=1):
-            emptyBtn = gr.Button("Clear History")
+            emptyBtn = gr.Button("清除历史")
             max_length = gr.Slider(0, 32768, value=8192, step=1.0, label="Maximum length", interactive=True)
             top_p = gr.Slider(0, 1, value=0.8, step=0.01, label="Top P", interactive=True)
             temperature = gr.Slider(0, 1, value=0.95, step=0.01, label="Temperature", interactive=True)

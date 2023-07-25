@@ -1,0 +1,1 @@
+https://huggingface.co/THUDM/chatglm2-6b
